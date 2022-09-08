@@ -1,0 +1,321 @@
+<?php  
+/* 
+Template Name: Register 
+*/  
+   
+get_header();   
+global $wpdb;  
+?>
+<div class="container">
+  
+  <div class="row register-page-container p-3 p-lg-5 mt-5 d-flex justify-content-center w-75 mx-auto">
+  
+    <?php
+    global $wpdb, $user_ID;  
+    
+    //Check whether the user is already logged in  
+    if (!$user_ID) {
+      
+      // Default page shows register form. 
+      // To show Login form set query variable action=login
+      $action  = (isset($_GET['action']) ) ? $_GET['action'] : 0;
+      
+      // Login Page
+      if ($action === "login") { ?>
+          
+        <?php 
+        $login  = (isset($_GET['login']) ) ? $_GET['login'] : 0;
+ 
+        if ( $login === "failed" ) {
+          echo '<div class="col-12 register-error"><strong>ERROR:</strong> Invalid username and/or password.</div>';
+        } elseif ( $login === "empty" ) {
+          echo '<div class="col-12 register-error"><strong>ERROR:</strong> Username and/or Password is empty.</div>';
+        } elseif ( $login === "false" ) {
+          echo '<div class="col-12 register-error"><strong>ERROR:</strong> You are logged out.</div>';
+        }
+        ?>
+ 
+        
+ 
+        
+        <?php
+        
+      } else { // Register Page ?>
+        
+        <?php
+        if ( $_POST ) {
+          
+          $error = 0;
+                  
+          $username = esc_sql($_REQUEST['username']);  
+          if ( empty($username) ) {
+            
+            echo '<div class="col-12 register-error">User name should not be empty.</div>';  
+            $error = 1;
+          }
+ 
+          $email = esc_sql($_REQUEST['email']);
+          if ( !preg_match("/^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$/", $email) ) {  
+            
+            echo '<div class="col-12 register-error">Please enter a valid email.</div>';
+            $error = 1;
+          }
+          
+          if ( $error == 0 ) {
+            
+            $random_password = wp_generate_password( 12, false );  
+            $status = wp_create_user( $username, $random_password, $email );  
+            
+            if ( is_wp_error($status) ) {
+            
+              echo '<div class="col-12 register-error">Username already exists. Please try another one.</div>';  
+            } else {
+              
+              $from     = get_option('admin_email');  
+              $headers   = 'From: '.$from . "\r\n";  
+              $subject   = "Registration successful";  
+              $message   = "Registration successful.\nYour login details\nUsername: $username\nPassword: $random_password";  
+              
+              // Email password and other details to the user
+              wp_mail( $email, $subject, $message, $headers );  
+              
+              echo "Please check your email for login details.";  
+              
+              $error = 2; // We will check for this variable before showing the sign up form. 
+            }
+          }
+ 
+        }
+ 
+        if ( $error != 2 ) { ?>  
+ 
+          <?php if(get_option('users_can_register')) { ?>
+          
+           
+            
+            
+            
+            <div class="col-md-5 manual-register-form">
+              
+              <p class="purple-text text-center">Sign Up Manually</p>
+              
+              <form action="" method="post">  
+                <input type="text" name="username" placeholder="Username" class="register-input mb-4" value="<?php if( ! empty($username) ) echo $username; ?>" /><br />    
+                <input type="text" name="email" placeholder="Email" class="register-input mb-4" value="<?php if( ! empty($email) ) echo $email; ?>" /> <br />  
+                <input type="submit" id="register-submit-btn" class="mb-4" name="submit" value="SignUp" />  
+              </form>
+              
+              <p>Already have an account? <a href="<?php echo get_permalink(); ?>?action=login">Login Here</a></p>
+              
+            </div>
+ 
+        <?php } else {
+          
+          echo "Registration is currently disabled. Please try again later."; 
+          
+          }
+            
+        } ?>
+        
+      <?php }
+    
+    } else { ?>
+      
+      <p>You are logged in. Click <a href="<?php bloginfo('wpurl'); ?>">here to go home</a></p>
+      
+    <?php } ?>
+  
+  </div>
+</div>
+ 
+
+<?php get_footer(); ?>
+
+
+<?php  
+/** 
+ * Template Name: Login page 
+ */  
+
+ get_header();   
+   
+error_reporting(0);
+$login  = (isset($_GET['login']) ) ? $_GET['login'] : 0;
+
+if ( $login === "failed" ) {
+  echo '<p class="login-msg"><strong>ERROR:</strong> Invalid username and/or password.</p>';
+} elseif ( $login === "empty" ) {
+  echo '<p class="login-msg"><strong>ERROR:</strong> Username and/or Password is empty.</p>';
+} elseif ( $login === "false" ) {
+  echo '<p class="login-msg"><strong>ERROR:</strong> You are logged out.</p>';
+}
+
+$args = array(
+    'redirect' => home_url( '/welcome/' )
+   ) 
+;?>
+<?php wp_login_form( $args ); ?>
+<?php get_footer(); ?>  
+
+
+
+<?php 
+/**
+* Template Name: welcome
+*/
+get_header(); 
+session_start();
+$args = array(
+    'id_username' => 'user',
+    'id_password' => 'pass',
+   ) 
+;
+$_SESSION["id_username"] = $args['id_username'];
+if (session_status() == PHP_SESSION_ACTIVE) {
+  echo 'Session is active';
+  echo '<br>';
+  
+}
+if (isset($_SESSION["username"])) {
+  echo "Logged in";
+
+
+} else {
+  echo "Not Logged in";
+}
+
+
+
+
+
+?>
+
+<?php 
+global $wpdb;
+$table_name = $wpdb->prefix . 'users';
+$user_nicename = $_SESSION['username'];
+$results = $wpdb->get_results( "SELECT * FROM $table_name WHERE user_nicename=$user_nicename" );
+if ( $results ) {
+    foreach ( $results as $result ){
+            $user_login=$result->user_login;
+            $display_name=$result->display_name;
+            $user_password=$result->user_pass;
+            $user_email=$result->user_email;
+             // $wdate=$result->Date;
+             // $id=$result->id;
+
+    }
+
+}
+
+
+// if ( isset( $_POST['submit'] ) ){
+
+//  $wpdb->update($table_name,array(
+//     'cname'=>$_POST['cname'],array('id'=>$wsid))
+
+//        );
+
+// }
+
+ ?>
+
+ <?php
+if( $_SERVER['REQUEST_METHOD'] == 'POST' ) 
+      {  
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'users';
+echo $user_nicename = $_SESSION['username'];
+echo $table_name;
+// $results1 = $wpdb->get_results( "SELECT * FROM $table_name WHERE user_nicename=$user_nicename" );
+$args = array(
+    'user_nicename' =>  esc_attr( $_POST['username'] ),
+    'user_email' => esc_attr( $_POST['email'] )
+);
+$dbData['last_login_time'] = time();
+$wpdb->query($wpdb->prepare("UPDATE $table_name SET user_nicename='%s' 
+                WHERE name = %s",$user_nicename,'mairie'));
+
+//wp_update_user( $args );
+ echo "Data successfully updated";
+  header("refresh:2;url=http://localhost/testsite/welcome/");
+   }
+  ?>
+<div class="container">
+  <div class="col-md-6" style="width: 50%; height: 50%; background-color: green; float:left;" >
+    
+    <table>
+ 
+  <tr>
+    <form action='<?php echo $_SERVER['REQUEST_URI']; ?>' method='post'>
+      <tr>
+        <td>Name</td>
+        <td><input type="text" value="<?php echo $user_nicename; ?>" name="username"></td>
+      </tr>
+      <tr>
+        <td>Email</td>
+        <td><input type="email" value="<?php echo $user_email; ?>" name="email"></td>
+        
+      </tr>
+      <tr>
+        <td>password</td>
+        <td><input type="text" value="<?php echo password_hash($user_password, PASSWORD_DEFAULT); ?>" name="password"></td>
+        
+      </tr>
+      <tr>
+        <td><input type="submit" name="submit"></td>
+
+      </tr>
+    </form>
+
+  </tr>
+</table>
+  </div>
+  <div class="col-md-6" style="width: 50%; height: 50%; float:left;"><button><a href="<?php echo get_template_directory_uri() . '/logout.php?action=logout&quot'; ?>">Logout</a></button></div>
+</div>
+
+
+<?php get_footer(); ?>  
+
+
+<!-- function page 
+
+-->
+<?php 
+function redirect_login_page() {
+  $login_page  = home_url( '/login/' );
+  $page_viewed = basename($_SERVER['REQUEST_URI']);
+ 
+  if( $page_viewed == "wp-login.php" && $_SERVER['REQUEST_METHOD'] == 'GET') {
+    wp_redirect($login_page);
+    exit;
+  }
+}
+add_action('init','redirect_login_page');
+
+
+function login_failed() {
+  $login_page  = home_url( '/login/' );
+  wp_redirect( $login_page . '?login=failed' );
+  exit;
+}
+add_action( 'wp_login_failed', 'login_failed' );
+ 
+function verify_username_password( $user, $username, $password ) {
+  $login_page  = home_url( '/login/' );
+    if( $username == "" || $password == "" ) {
+        wp_redirect( $login_page . "?login=empty" );
+        exit;
+    }
+}
+add_filter( 'authenticate', 'verify_username_password', 1, 3);
+
+
+
+function logout_page() {
+  $login_page  = home_url( '/login/' );
+  wp_redirect( $login_page . "?login=false" );
+  exit;
+}
+add_action('wp_logout','logout_page');
+?>
